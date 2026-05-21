@@ -337,11 +337,22 @@
     document.getElementById('content').innerHTML = '<div class="loading"><div class="spinner"></div><div>Loading...</div></div>';
 
     try {
-      const res = await fetch('https://api.sofascore.com/api/v1/sport/football/scheduled-events/'+selectedDate, {
-        credentials:'omit', signal: AbortSignal.timeout(12000)
-      });
-      if (!res.ok) throw new Error('HTTP '+res.status);
-      const data = await res.json();
+      const apiUrl = 'https://api.sofascore.com/api/v1/sport/football/scheduled-events/'+selectedDate;
+      const attempts = [
+        apiUrl,
+        'https://corsproxy.io/?url='+encodeURIComponent(apiUrl),
+        'https://api.allorigins.win/raw?url='+encodeURIComponent(apiUrl),
+      ];
+      let data = null, lastErr = 'No response';
+      for (const url of attempts) {
+        try {
+          const res = await fetch(url, {credentials:'omit', signal:AbortSignal.timeout(10000)});
+          if (!res.ok) throw new Error('HTTP '+res.status);
+          data = await res.json();
+          break;
+        } catch(e) { lastErr = e.message; }
+      }
+      if (!data) throw new Error(lastErr);
       const allEvents = data.events || [];
 
       const grouped = {};
