@@ -340,8 +340,9 @@
       const apiUrl = 'https://api.sofascore.com/api/v1/sport/football/scheduled-events/'+selectedDate;
       const attempts = [
         apiUrl,
-        'https://corsproxy.io/?url='+encodeURIComponent(apiUrl),
+        'https://corsproxy.io/?'+encodeURIComponent(apiUrl),
         'https://api.allorigins.win/raw?url='+encodeURIComponent(apiUrl),
+        'https://api.codetabs.com/v1/proxy?quest='+apiUrl,
       ];
       let data = null, lastErr = 'No response';
       for (const url of attempts) {
