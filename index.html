@@ -375,7 +375,7 @@
 
       document.getElementById('statusText').textContent = total > 0
         ? total+' UK '+label+' across '+ukNames.length+' competition'+(ukNames.length!==1?'s':'')
-        : (isPast ? 'No UK results found' : 'No UK fixtures today');
+        : (isPast ? 'No UK results found' : 'No UK fixtures today — '+allEvents.length+' global events checked');
 
       if (total === 0) {
         document.getElementById('content').innerHTML = '<div class="empty-state"><span class="emoji">'+(isPast?'&#128195;':'&#128197;')+'</span><strong>'+(isPast?'No UK results':'No UK football')+'</strong><br><span style="font-size:.85rem;margin-top:8px;display:block;color:var(--text-dim)">'+(isPast?'Nothing found for this date.':'Check back later.')+'</span></div>';
