@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UK Football Today</title>
+  <style>
+    :root{--bg:#0f1117;--surface:#1a1d2e;--surface2:#222537;--accent:#00c853;--text:#e8eaf6;--text-dim:#9e9e9e;--border:#2a2d3e}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:40px}
+    header{background:linear-gradient(135deg,#0d1b2a 0%,#1a2a1a 100%);border-bottom:1px solid var(--border);padding:20px 24px;display:flex;align-items:center;justify-content:space-between}
+    .header-left h1{font-size:1.5rem;font-weight:700;letter-spacing:-.5px}
+    .header-left .subtitle{font-size:.85rem;color:var(--text-dim);margin-top:3px}
+    .date-badge{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:.85rem;color:var(--accent);font-weight:600}
+    .container{max-width:840px;margin:0 auto;padding:24px 16px}
+    .status-bar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 18px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:.88rem;color:var(--text-dim)}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;animation:pulse 2s infinite}
+    .source-badge{margin-left:auto;font-size:.72rem;color:var(--text-dim);background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:3px 8px}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Date navigation */
+    .date-nav{display:flex;align-items:center;gap:6px;margin-bottom:24px}
+    .nav-arrow{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);width:32px;height:36px;border-radius:6px;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+    .nav-arrow:hover{background:var(--surface2);color:var(--text)}
+    .date-strip{display:flex;gap:6px;overflow-x:auto;flex:1;scrollbar-width:none;padding:2px 0}
+    .date-strip::-webkit-scrollbar{display:none}
+    .date-pill{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);padding:6px 12px;border-radius:20px;cursor:pointer;font-size:.8rem;font-weight:500;white-space:nowrap;transition:all .15s;flex-shrink:0}
+    .date-pill:hover{background:var(--surface2);color:var(--text)}
+    .date-pill.today{border-color:var(--accent);color:var(--accent)}
+    .date-pill.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700}
+    .date-pill.active.today{background:var(--accent);color:#000}
+
+    /* League sections */
+    .league-section{margin-bottom:20px}
+    .league-header{display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--surface2);border:1px solid var(--border);border-bottom:none;border-radius:8px 8px 0 0}
+    .league-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .league-name{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;flex:1}
+    .league-channels{display:flex;gap:5px;flex-wrap:wrap}
+    .matches-list{border:1px solid var(--border);border-radius:0 0 8px 8px;overflow:hidden}
+    .match-row{display:grid;grid-template-columns:66px 1fr 52px 1fr 108px;align-items:center;padding:13px 16px;border-bottom:1px solid var(--border);background:var(--surface);gap:8px;transition:background .15s}
+    .match-row:last-child{border-bottom:none}
+    .match-row:hover{background:var(--surface2)}
+    .time-col{text-align:center}
+    .kick-time{font-size:1rem;font-weight:700;color:var(--accent)}
+    .match-status{font-size:.68rem;color:var(--text-dim);margin-top:2px}
+    .live-badge{display:inline-block;font-size:.65rem;font-weight:700;background:#e53935;color:#fff;padding:1px 5px;border-radius:3px;margin-top:3px;animation:pulse 1.2s infinite}
+    .team-home{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+    .team-away{display:flex;align-items:center;justify-content:flex-start;gap:8px;min-width:0}
+    .team-name{font-size:.88rem;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .team-badge{width:32px;height:32px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.58rem;font-weight:700;color:var(--text-dim);flex-shrink:0;overflow:hidden}
+    .team-badge img{width:24px;height:24px;object-fit:contain;display:block}
+    .score-col{text-align:center}
+    .score{font-size:1.05rem;font-weight:700;letter-spacing:2px}
+    .vs{font-size:.82rem;color:var(--text-dim)}
+    .tv-col{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+    .channel-badge{display:inline-block;font-size:.67rem;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap}
+    .ch-sky{background:#003087;color:#fff}.ch-tnt{background:#cc0000;color:#fff}
+    .ch-bbc{background:#111;color:#fff;border:1px solid #333}.ch-bbc-sc{background:#1d1d1b;color:#fff}
+    .ch-itv{background:#ED0E0E;color:#fff}
+    .ch-ch4{background:#4D0099;color:#fff}.ch-other{background:#444;color:#ccc}
+    .lc-epl{background:#3d195b}.lc-champ{background:#1e4fa8}.lc-l1{background:#e67e22}
+    .lc-l2{background:#27ae60}.lc-fa{background:#c9a227}.lc-efl{background:#c0392b}
+    .lc-ucl{background:#001489}.lc-uel{background:#ff6900}.lc-uecl{background:#2e86ab}
+    .lc-spl{background:#003366}.lc-intl{background:#2d6a4f}.lc-other{background:#555}
+    .loading{text-align:center;padding:60px 20px;color:var(--text-dim)}
+    .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+    .empty-state{text-align:center;padding:40px 20px;color:var(--text-dim);background:var(--surface);border:1px solid var(--border);border-radius:10px}
+    .empty-state .emoji{font-size:2.5rem;display:block;margin-bottom:12px}
+    .refresh-btn{background:var(--surface2);border:1px solid var(--border);color:var(--accent);padding:7px 14px;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;transition:background .15s}
+    .refresh-btn:hover{background:#2d3050}
+    .disclaimer{font-size:.74rem;color:var(--text-dim);text-align:center;margin-top:28px;line-height:1.7}
+    @media(max-width:600px){
+      .match-row{grid-template-columns:54px 1fr 42px 1fr 80px;padding:10px 8px;gap:5px}
+      .team-name{font-size:.75rem}.kick-time{font-size:.85rem}
+      .channel-badge{font-size:.6rem;padding:2px 4px}
+      .team-badge{width:26px;height:26px}.team-badge img{width:20px;height:20px}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <h1>&#x26BD; UK Football</h1>
+    <div class="subtitle">Fixtures, results &amp; UK broadcast channels</div>
+  </div>
+  <div class="date-badge" id="dateBadge">--</div>
+</header>
+<div class="container">
+  <div class="status-bar">
+    <div class="dot"></div>
+    <span id="statusText">Loading...</span>
+    <button class="refresh-btn" onclick="loadFixtures()">&#8635; Refresh</button>
+    <span class="source-badge">Sofascore</span>
+  </div>
+
+  <div class="date-nav">
+    <button class="nav-arrow" onclick="shiftWindow(-7)" title="Previous week">&#8249;</button>
+    <div class="date-strip" id="dateStrip"></div>
+    <button class="nav-arrow" onclick="shiftWindow(7)" title="Next week">&#8250;</button>
+  </div>
+
+  <div id="content">
+    <div class="loading"><div class="spinner"></div><div>Loading fixtures...</div></div>
+  </div>
+  <p class="disclaimer">
+    Data from <a href="https://www.sofascore.com" style="color:var(--accent)" target="_blank">Sofascore</a>.
+    Channel info reflects UK broadcast rights. Confirm exact channel on broadcaster websites.
+  </p>
+</div>
+<script>
+  // Always use Europe/London timezone regardless of the user's computer clock setting
+  function londonDateStr(d) {
+    // en-CA locale gives YYYY-MM-DD format, combined with London TZ gives correct UK date
+    return new Intl.DateTimeFormat('en-CA', {timeZone:'Europe/London'}).format(d);
+  }
+  function addDays(dateStr, n) {
+    const d = new Date(dateStr+'T12:00:00');
+    d.setDate(d.getDate()+n);
+    return londonDateStr(d);
+  }
+  function dayLabel(dateStr, todayStr) {
+    const diff = Math.round((new Date(dateStr+'T12:00:00') - new Date(todayStr+'T12:00:00')) / 86400000);
+    if (diff === -1) return 'Yesterday';
+    if (diff === 0)  return 'Today';
+    if (diff === 1)  return 'Tomorrow';
+    const d = new Date(dateStr+'T12:00:00');
+    return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+  }
+
+  const TODAY = londonDateStr(new Date());
+  let selectedDate = TODAY;
+  let windowOffset = 0; // how many days the strip is shifted from default (-3 to +3)
+
+  function renderStrip() {
+    const strip = document.getElementById('dateStrip');
+    strip.innerHTML = '';
+    // Show 7 dates: from (today + windowOffset - 3) to (today + windowOffset + 3)
+    const start = windowOffset - 3;
+    for (let i = start; i <= start + 6; i++) {
+      const date = addDays(TODAY, i);
+      const btn = document.createElement('button');
+      const isToday = date === TODAY;
+      const isSelected = date === selectedDate;
+      btn.className = 'date-pill' + (isToday ? ' today' : '') + (isSelected ? ' active' : '');
+      btn.textContent = dayLabel(date, TODAY);
+      btn.onclick = () => selectDate(date);
+      strip.appendChild(btn);
+    }
+    // Scroll selected pill into view
+    const activePill = strip.querySelector('.active');
+    if (activePill) activePill.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});
+  }
+
+  function shiftWindow(days) {
+    windowOffset += days;
+    renderStrip();
+  }
+
+  function selectDate(date) {
+    selectedDate = date;
+    // If date is outside current window, centre the window on it
+    const diff = Math.round((new Date(date+'T12:00:00') - new Date(TODAY+'T12:00:00')) / 86400000);
+    if (diff < windowOffset - 3 || diff > windowOffset + 3) {
+      windowOffset = diff;
+    }
+    renderStrip();
+    loadFixtures();
+  }
+
+  // Update header badge
+  function updateHeader() {
+    const d = new Date(selectedDate+'T12:00:00');
+    document.getElementById('dateBadge').textContent = new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',weekday:'short',day:'numeric',month:'short',year:'numeric'}).format(d);
+  }
+
+  const UK_KEYWORDS = [
+    'premier league','championship','league one','league two',
+    'fa cup','efl cup','carabao','league cup',
+    'scottish premiership','scottish cup','scottish league cup',
+    'champions league','europa league','conference league',
+    'nations league','european championship','world cup',
+  ];
+
+  const CHANNEL_MAP = [
+    {k:'premier league',       ch:['Sky Sports Premier League','Sky Sports Main Event','TNT Sports 1'], cs:['Sky Sports Main Event','Sky Sports Premier League'],dot:'lc-epl'},
+    {k:'championship',         ch:['Sky Sports Main Event','Sky Sports Football'],      cs:['Sky Sports Main Event'],                dot:'lc-champ'},
+    {k:'league one',           ch:['Sky Sports Football'],                              cs:['Sky Sports Football'],                  dot:'lc-l1'},
+    {k:'league two',           ch:['Sky Sports Football'],                              cs:['Sky Sports Football'],                  dot:'lc-l2'},
+    {k:'fa cup',               ch:['BBC One','ITV1','TNT Sports 1'],                    cs:['BBC One','ITV1'],                       dot:'lc-fa'},
+    {k:'carabao',              ch:['Sky Sports Main Event','TNT Sports 1'],             cs:['Sky Sports Main Event'],                dot:'lc-efl'},
+    {k:'efl cup',              ch:['Sky Sports Main Event','TNT Sports 1'],             cs:['Sky Sports Main Event'],                dot:'lc-efl'},
+    {k:'league cup',           ch:['Sky Sports Main Event','TNT Sports 1'],             cs:['Sky Sports Main Event'],                dot:'lc-efl'},
+    {k:'scottish premiership', ch:['Sky Sports Football','BBC Scotland'],               cs:['Sky Sports Main Event','BBC Scotland'], dot:'lc-spl'},
+    {k:'scottish cup',         ch:['BBC Scotland','Sky Sports Football'],               cs:['BBC Scotland'],                         dot:'lc-spl'},
+    {k:'scottish league cup',  ch:['Sky Sports Football'],                              cs:['Sky Sports Football'],                  dot:'lc-spl'},
+    {k:'champions league',     ch:['TNT Sports 1','TNT Sports 2','TNT Sports 3'],       cs:['TNT Sports 1'],                         dot:'lc-ucl'},
+    {k:'europa league',        ch:['TNT Sports 1','TNT Sports 2'],                      cs:['TNT Sports 1'],                         dot:'lc-uel'},
+    {k:'conference league',    ch:['TNT Sports 1','TNT Sports 2'],                      cs:['TNT Sports 1'],                         dot:'lc-uecl'},
+    {k:'nations league',       ch:['Channel 4','ITV1'],                                 cs:['Channel 4'],                            dot:'lc-intl'},
+    {k:'european championship',ch:['BBC One','ITV1'],                                   cs:['BBC One','ITV1'],                       dot:'lc-intl'},
+    {k:'world cup',            ch:['BBC One','ITV1'],                                   cs:['BBC One','ITV1'],                       dot:'lc-intl'},
+  ];
+
+  const CH_STYLE = {
+    'Sky Sports Main Event':'ch-sky','Sky Sports Premier League':'ch-sky','Sky Sports Football':'ch-sky','Sky Sports':'ch-sky',
+    'TNT Sports 1':'ch-tnt','TNT Sports 2':'ch-tnt','TNT Sports 3':'ch-tnt','TNT Sports':'ch-tnt',
+    'BBC One':'ch-bbc','BBC Two':'ch-bbc','BBC':'ch-bbc','BBC Scotland':'ch-bbc-sc',
+    'ITV1':'ch-itv','ITV':'ch-itv','Channel 4':'ch-ch4',
+  };
+
+  // Competitions that are inherently international (no country check needed)
+  const INTL_KEYWORDS = ['champions league','europa league','conference league','nations league','european championship','world cup'];
+  // Domestic competitions that need a UK country to be relevant
+  const DOMESTIC_KEYWORDS = ['premier league','championship','league one','league two','fa cup','efl cup','carabao','league cup','scottish premiership','scottish cup','scottish league cup'];
+  const UK_COUNTRIES = ['england','scotland','wales','northern ireland'];
+
+  const WOMEN_WORDS = ['women','woman','female','ladies','girls','femenin','feminin'];
+
+  function isUKRelevant(e) {
+    const name    = ((e.tournament?.uniqueTournament?.name || e.tournament?.name) || '').toLowerCase();
+    const country = ((e.tournament?.category?.country?.name || e.tournament?.category?.name) || '').toLowerCase();
+    // Always exclude women's competitions
+    if (WOMEN_WORDS.some(w => name.includes(w) || country.includes(w))) return false;
+    const isUKCountry = UK_COUNTRIES.some(c => country.includes(c));
+    if (INTL_KEYWORDS.some(k => name.includes(k))) return true;
+    if (isUKCountry && DOMESTIC_KEYWORDS.some(k => name.includes(k))) return true;
+    return false;
+  }
+  function getCompInfo(name) {
+    const l = name.toLowerCase();
+    const isSingle = (l.includes('final') && !l.includes('semi') && !l.includes('quarter')) || l.includes('semi');
+    for (const c of CHANNEL_MAP) {
+      if (l.includes(c.k)) return {...c, ch: isSingle ? c.cs : c.ch};
+    }
+    return {ch:['Sky Sports'], dot:'lc-other'};
+  }
+  function chBadges(chs) {
+    return chs.map(c => '<span class="channel-badge '+(CH_STYLE[c]||'ch-other')+'">'+c+'</span>').join('');
+  }
+  function initials(name) {
+    return name.split(/\s+/).filter(Boolean).map(w=>w[0]).join('').slice(0,3).toUpperCase();
+  }
+  function fmtTime(ts) {
+    // Force Europe/London so BST/GMT is always correct regardless of computer timezone
+    return new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ts*1000));
+  }
+
+  function makeBadge(teamId, teamName) {
+    const el = document.createElement('div');
+    el.className = 'team-badge';
+    el.textContent = initials(teamName);
+    if (teamId) {
+      const img = document.createElement('img');
+      img.src = 'https://api.sofascore.com/api/v1/team/'+teamId+'/image';
+      img.alt = teamName;
+      img.loading = 'lazy';
+      img.style.cssText = 'width:24px;height:24px;object-fit:contain;display:block';
+      img.onload  = function() { el.textContent=''; el.appendChild(img); };
+      img.onerror = function() { /* keep initials */ };
+    }
+    return el;
+  }
+
+  function renderComp(compName, events) {
+    const info = getCompInfo(compName);
+    const section = document.createElement('div');
+    section.className = 'league-section';
+    const header = document.createElement('div');
+    header.className = 'league-header';
+    header.innerHTML = '<div class="league-dot '+info.dot+'"></div>'
+      +'<span class="league-name">'+compName+'</span>'
+      +'<div class="league-channels">'+chBadges(info.ch)+'</div>';
+    section.appendChild(header);
+
+    const list = document.createElement('div');
+    list.className = 'matches-list';
+
+    events.forEach(e => {
+      const stype = e.status?.type || 'notstarted';
+      const isLive = stype === 'inprogress';
+      const isFT   = stype === 'finished';
+      const hScore = e.homeScore?.current;
+      const aScore = e.awayScore?.current;
+      const hasScore = (hScore !== null && hScore !== undefined) && (isFT || isLive);
+
+      const row = document.createElement('div');
+      row.className = 'match-row';
+
+      const timeCol = document.createElement('div');
+      timeCol.className = 'time-col';
+      timeCol.innerHTML = '<div class="kick-time">'+fmtTime(e.startTimestamp)+'</div>'
+        +(isLive ? '<div class="live-badge">LIVE</div>' : '')
+        +(isFT   ? '<div class="match-status">FT</div>'  : '');
+      row.appendChild(timeCol);
+
+      const homeCol = document.createElement('div');
+      homeCol.className = 'team-home';
+      const homeNameEl = document.createElement('span');
+      homeNameEl.className = 'team-name';
+      homeNameEl.textContent = e.homeTeam.name;
+      homeCol.appendChild(homeNameEl);
+      homeCol.appendChild(makeBadge(e.homeTeam.id, e.homeTeam.name));
+      row.appendChild(homeCol);
+
+      const scoreCol = document.createElement('div');
+      scoreCol.className = 'score-col';
+      scoreCol.innerHTML = hasScore
+        ? '<span class="score">'+hScore+'&ndash;'+aScore+'</span>'
+        : '<span class="vs">vs</span>';
+      row.appendChild(scoreCol);
+
+      const awayCol = document.createElement('div');
+      awayCol.className = 'team-away';
+      awayCol.appendChild(makeBadge(e.awayTeam.id, e.awayTeam.name));
+      const awayNameEl = document.createElement('span');
+      awayNameEl.className = 'team-name';
+      awayNameEl.textContent = e.awayTeam.name;
+      awayCol.appendChild(awayNameEl);
+      row.appendChild(awayCol);
+
+      const tvCol = document.createElement('div');
+      tvCol.className = 'tv-col';
+      tvCol.innerHTML = chBadges(info.ch);
+      row.appendChild(tvCol);
+
+      list.appendChild(row);
+    });
+
+    section.appendChild(list);
+    return section;
+  }
+
+  async function loadFixtures() {
+    updateHeader();
+    document.getElementById('statusText').textContent = 'Loading...';
+    document.getElementById('content').innerHTML = '<div class="loading"><div class="spinner"></div><div>Loading...</div></div>';
+
+    try {
+      const res = await fetch('https://api.sofascore.com/api/v1/sport/football/scheduled-events/'+selectedDate, {
+        credentials:'omit', signal: AbortSignal.timeout(12000)
+      });
+      if (!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+      const allEvents = data.events || [];
+
+      const grouped = {};
+      for (const e of allEvents) {
+        // Skip matches whose actual kick-off date in London time doesn't match the selected date
+        // (Sofascore sometimes bundles previous-day late-night finishers into the next day's query)
+        const matchDate = new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London'}).format(new Date(e.startTimestamp*1000));
+        if (matchDate !== selectedDate) continue;
+        if (!isUKRelevant(e)) continue;
+        const compName = e.tournament?.uniqueTournament?.name || e.tournament?.name || 'Unknown';
+        if (!grouped[compName]) grouped[compName] = [];
+        grouped[compName].push(e);
+      }
+
+      const ukNames = Object.keys(grouped);
+      const total = ukNames.reduce((s,k) => s+grouped[k].length, 0);
+      const isPast = selectedDate < TODAY;
+      const label = isPast ? 'result'+(total!==1?'s':'') : 'match'+(total!==1?'es':'');
+
+      document.getElementById('statusText').textContent = total > 0
+        ? total+' UK '+label+' across '+ukNames.length+' competition'+(ukNames.length!==1?'s':'')
+        : (isPast ? 'No UK results found' : 'No UK fixtures today');
+
+      if (total === 0) {
+        document.getElementById('content').innerHTML = '<div class="empty-state"><span class="emoji">'+(isPast?'&#128195;':'&#128197;')+'</span><strong>'+(isPast?'No UK results':'No UK football')+'</strong><br><span style="font-size:.85rem;margin-top:8px;display:block;color:var(--text-dim)">'+(isPast?'Nothing found for this date.':'Check back later.')+'</span></div>';
+        return;
+      }
+
+      for (const k of ukNames) grouped[k].sort((a,b) => a.startTimestamp - b.startTimestamp);
+      const content = document.getElementById('content');
+      content.innerHTML = '';
+      ukNames.forEach(name => content.appendChild(renderComp(name, grouped[name])));
+
+    } catch(err) {
+      document.getElementById('statusText').textContent = 'Failed to load';
+      document.getElementById('content').innerHTML = '<div class="empty-state"><span class="emoji">&#9888;</span><strong>Could not load fixtures</strong><br><span style="font-size:.85rem;margin-top:8px;display:block;color:var(--text-dim)">'+err.message+'</span></div>';
+    }
+  }
+
+  // Init
+  renderStrip();
+  loadFixtures();
+</script>
+</body>
+</html>
